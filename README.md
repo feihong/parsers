@@ -21,3 +21,4 @@
 
 - [Opal: Monadic Parser Combinators for OCaml](https://github.com/pyrocat101/opal)
 - [OCaml Tutorials: Streams](https://ocaml.org/learn/tutorials/streams.html)
+- [The toplevel system or REPL](https://ocaml.org/manual/toplevel.html)
