@@ -50,6 +50,18 @@ let notes =
   (* let* entry = entry in *)
   return {title; author; entries }
 
+let () =
+  let ic = open_in "sample_notes.txt" in
+  match parse notes (LazyStream.of_channel ic) with
+  | None -> ()
+  | Some {title; author; entries} ->
+    Printf.printf "title: %s, author: %s\n\n" title author;
+    entries |> List.iter (fun {chapterTitle; text; annotation; _} ->
+      Printf.printf "title: %s; text: %s; annotation: %s\n" chapterTitle text annotation);
+  close_in ic
+
+(*
+
 let parse_string p s = parse p (LazyStream.of_string s)
 
 let s =
@@ -61,14 +73,7 @@ let s =
     close_in ic;
     (Bytes.unsafe_to_string s)
   in
-  let s = read_file "sample_notes.txt" in
-  match parse_string notes s with
-  | None -> ()
-  | Some {title; author; entries} ->
-    Printf.printf "title: %s, author: %s\n\n" title author;
-    entries |> List.iter (fun {chapterTitle; text; annotation; _} ->
-      Printf.printf "title: %s; text: %s; annotation: %s\n" chapterTitle text annotation)
+  read_file "sample_notes.txt"
 
-(*
 parse_string notes s;;
 *)
