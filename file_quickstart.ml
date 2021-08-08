@@ -1,12 +1,15 @@
-let file = "cedict.txt" in
-let in_channel = open_in file in
-try
-  while true do
-    let line = input_line in_channel in
-    if line.[0] <> '#' then (
-      print_endline line;
-      flush stdout
-    )
-  done
-with End_of_file ->
-  close_in in_channel
+let file = "cedict.txt"
+
+let line_stream_of_file file =
+  let in_channel = open_in file in
+  Stream.from (fun _ ->
+    try
+      Some (input_line in_channel)
+    with End_of_file ->
+      close_in in_channel;
+      None)
+
+let () =
+  line_stream_of_file file
+  |> Stream.iter (fun line ->
+    print_endline line)
