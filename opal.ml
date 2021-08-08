@@ -1,3 +1,5 @@
+(* https://github.com/pyrocat101/opal/blob/master/opal.ml *)
+
 (* lazy stream -------------------------------------------------------------- *)
 
 module LazyStream = struct

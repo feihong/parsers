@@ -31,5 +31,6 @@ Run `cedict_parser.ml` inside of utop:
 ## Links
 
 - [Opal: Monadic Parser Combinators for OCaml](https://github.com/pyrocat101/opal)
+- [Angstrom: Parser combinators built for speed and memory-efficiency](https://github.com/inhabitedtype/angstrom)
 - [OCaml Tutorials: Streams](https://ocaml.org/learn/tutorials/streams.html)
 - [The toplevel system or REPL](https://ocaml.org/manual/toplevel.html)
