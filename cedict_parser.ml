@@ -21,8 +21,8 @@ let exactly_s s =
 let pinyin =
   let brackets = between (exactly '[') (exactly ']') in
   let space_sep p = sep_by p (exactly ' ') in
-  let comma = exactly_s "," in
-  let dot = exactly_s "·" in  (* unicode dot *)
+  let comma = exactly ',' => String.make 1 in
+  let dot = exactly_s "·" in  (* unicode dot, has length 2 *)
   let morpheme = many1 (alpha_num <|> (exactly ':')) => implode in
   let item = comma <|> dot <|> morpheme in
   brackets (space_sep item)
@@ -43,7 +43,6 @@ let entry =
   let* gloss = gloss in
   return {trad; simp; pinyin; gloss}
 
-
 let parse_string p s = parse p (LazyStream.of_string s)
 
 let process_line line =
@@ -52,8 +51,9 @@ let process_line line =
   | None ->
     Printf.printf "error: %s\n" line;
     raise Stream.Failure
-  | Some {trad; simp; pinyin; _} ->
-    Printf.printf "trad: %s, simp: %s, pinyin: %s\n" trad simp (String.concat " " pinyin)
+  | Some {trad; simp; pinyin; gloss} ->
+    Printf.printf "trad: %s, simp: %s, pinyin: %s, gloss: %s\n"
+      trad simp (String.concat " " pinyin) (String.concat "; " gloss)
 
 let () =
   let in_channel = open_in "cedict.txt" in
