@@ -10,12 +10,23 @@
 
 ## Quickstart
 
+Use `opal` inside of `utop`:
+
     utop
     utop # #use "opal.ml";;
     utop # let input = LazyStream.of_string "foo is great" in
     let foo = token "foo" in
     parse foo input;;
     - : string option = None
+
+Run `cedict_parser.ml` as script:
+
+    ocaml cedict_parser.ml
+
+Run `cedict_parser.ml` inside of utop:
+
+    utop
+    utop # #use "cedict_parser.ml";;
 
 ## Links
 
