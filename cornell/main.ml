@@ -1,7 +1,5 @@
-open Ast
 
-let parse (s : string) : expr =
+let parse (s : string) : Ast.expr =
   let lexbuf = Lexing.from_string s in
-  let ast = Parser.prog Lexer.read lexbuff in
+  let ast = Parser.prog Lexer.read lexbuf in
   ast
-

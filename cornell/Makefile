@@ -1,5 +1,11 @@
-lexer:
-	ocamlbuild lexer.ml
+default: build
+	utop
 
-parser:
-	ocamlbuild -use-menhir parser.ml
+build:
+	ocamlbuild -use-ocamlfind main.byte
+
+test:
+	ocamlbuild -use-ocamlfind test.byte && ./test.byte
+
+clean:
+	ocamlbuild -clean

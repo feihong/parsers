@@ -15,6 +15,7 @@ rule read =
   | "false" { FALSE }
   | "<=" { LEQ }
   | "*" { TIMES }
+  | "+" { PLUS }
   | "(" { LPAREN }
   | ")" { RPAREN }
   | "let" { LET }
@@ -23,6 +24,6 @@ rule read =
   | "if" { IF }
   | "then" { THEN }
   | "else" { ELSE }
-  | id { ID (Lexing.lexeme lebxuf) }
+  | id { ID (Lexing.lexeme lexbuf) }
   | int { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | eof { EOF }
