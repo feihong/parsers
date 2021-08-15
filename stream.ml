@@ -10,6 +10,16 @@ let filter pred stream =
   Stream.from next
 
 let of_file_lines in_channel =
-  Stream.from (fun _ ->
-    try Some (input_line in_channel)
-    with End_of_file -> None)
+  Stream.from (fun _ -> try Some (input_line in_channel) with End_of_file -> None)
+
+let nnext n stream =
+  let res = ref [] in
+  for _ = 1 to n do
+    res := Stream.next stream :: !res
+  done;
+  List.rev !res
+
+let next_opt stream =
+  match Stream.next stream with
+  | exception Stream.Failure -> None
+  | c -> Some c
