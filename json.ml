@@ -3,7 +3,7 @@
 type token =
   | True
   | False
-  | Number of int
+  | Number of float
   | String of string
   | Colon
   | Comma
@@ -14,21 +14,25 @@ type token =
 
 let is_space c = List.mem c ['\n'; '\t'; ' '; '\r']
 
-let is_digit c = List.mem c ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
+let digits = ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
+
+let is_digit_or_dot c = List.mem c ('.' :: digits)
+
+let is_start_of_number c = List.mem c ('-' :: '.' :: digits)
 
 let implode chars = chars |> List.map (String.make 1) |> String.concat ""
 
 let make_string chars = String (chars |> List.rev |> implode)
 
 let make_number chars =
-  match chars |> List.rev |> implode |> int_of_string_opt with
+  match chars |> List.rev |> implode |> float_of_string_opt with
   | None -> Error "Invalid number"
   | Some n -> Ok (Number n)
 
 let lex_number first_char stream =
   let rec loop acc =
     match Stream.peek stream with
-    | Some c when is_digit c -> Stream.junk stream; loop (c :: acc)
+    | Some c when is_digit_or_dot c -> Stream.junk stream; loop (c :: acc)
     | (None | Some _) -> make_number acc
   in loop [first_char]
 
@@ -65,7 +69,7 @@ let tokenize stream =
       | exception Stream.Failure -> Error "Unexpected end of input"
       | ['a'; 'l'; 's'; 'e'] -> loop (False :: acc)
       | _ -> Error "Unrecognized token")
-    | c when is_digit c || c == '-' ->
+    | c when is_start_of_number c ->
       (match lex_number c stream with
       | Error _ as err -> err
       | Ok token -> loop (token :: acc))
