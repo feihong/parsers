@@ -13,13 +13,11 @@ let of_file_lines in_channel =
   Stream.from (fun _ -> try Some (input_line in_channel) with End_of_file -> None)
 
 let nnext n stream =
-  let res = ref [] in
-  for _ = 1 to n do
-    res := Stream.next stream :: !res
-  done;
-  List.rev !res
+  let rec loop n acc =
+    match n with
+    | 0 -> List.rev acc
+    | _ -> loop (n - 1) (Stream.next stream :: acc)
+  in
+  try Some (loop n []) with Stream.Failure -> None
 
-let next_opt stream =
-  match Stream.next stream with
-  | exception Stream.Failure -> None
-  | c -> Some c
+let next_opt stream = try Some (Stream.next stream) with Stream.Failure -> None
