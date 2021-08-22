@@ -102,25 +102,28 @@ module Parser = struct
     | LBracket :: rest -> parse_array rest
     | LBrace :: rest -> parse_object rest
     | [] -> Error "No tokens"
-    | _ -> Error "Unimplemented"
+    | _ -> Error "Unexpected token"
 
   and parse_array tokens =
     let rec loop acc tokens =
-      match tokens with
-      | Lexer.RBracket :: rest -> Ok (Array (List.rev acc), rest)
-      | tokens ->
+      match tokens, acc with
+      | Lexer.RBracket :: rest, _ -> Ok (Array (List.rev acc), rest)
+      | tokens, []
+      | Comma :: tokens, _ :: _ ->
         (match parse tokens with
-        | Ok (element, Comma :: rest) | Ok (element, rest) -> loop (element :: acc) rest
+        | Ok (element, rest) -> loop (element :: acc) rest
         | Error _ as err  -> err)
+      | _ -> Error "Unexpected token"
     in loop [] tokens
 
   and parse_object tokens =
     let rec loop acc tokens =
-      match tokens with
-      | Lexer.RBrace :: rest -> Ok (Object (List.rev acc), rest)
-      | String key :: Colon :: rest ->
+      match tokens, acc with
+      | Lexer.RBrace :: rest, _ -> Ok (Object (List.rev acc), rest)
+      | String key :: Colon :: rest, []
+      | Comma :: String key :: Colon :: rest, _ :: _ ->
         (match parse rest with
-        | Ok (value, Comma :: rest) | Ok (value, rest) -> loop ((key, value) :: acc) rest
+        | Ok (value, rest) -> loop ((key, value) :: acc) rest
         | Error _ as err -> err)
       | _ -> Error "Unexpected token"
     in loop [] tokens
