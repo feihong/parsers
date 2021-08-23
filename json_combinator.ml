@@ -17,20 +17,16 @@ let exactly_s s =
   loop s 0
 
 let whole_number =
-  let decimal_part = exactly '.' >>= fun _ -> many digit => implode in
   let* whole_part = many1 digit => implode in
-  let* decimal_part = option "" (decimal_part) in
+  let* decimal_part = option "" (exactly '.' >> many digit => implode) in
   return (whole_part ^ "." ^ decimal_part)
 
-let partial_number =
-  let* _ = exactly '.' in
-  let* decimal_part = many1 digit => implode in
-  return ("0." ^ decimal_part)
+let partial_number = exactly '.' >> many1 digit => fun x -> "0." ^ implode x
 
 let number =
   let* negative_part = option "" (exactly '-' >> return "-") in
   let* number = whole_number <|> partial_number in
-  let value = negative_part ^ number |> float_of_string in
+  let value = float_of_string (negative_part ^ number) in
   return (Number value)
 
 let boolean =
@@ -53,7 +49,7 @@ let pure_string =
   let* _ = exactly '"' in
   return (body |> List.flatten |> implode)
 
-let string = pure_string => (fun s -> String s)
+let string = pure_string => fun s -> String s
 
 let comma = lexeme (exactly ',')
 
