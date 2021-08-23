@@ -57,7 +57,9 @@ let string = pure_string => (fun s -> String s)
 
 let comma = lexeme (exactly ',')
 
-let rec json input = lexeme (choice [number; boolean; string; array; object_]) input
+let rec whole input = (json >>= fun x -> lexeme (eof x)) input
+
+and json input = lexeme (choice [number; boolean; string; array; object_]) input
 
 and array input =
   let aux =
