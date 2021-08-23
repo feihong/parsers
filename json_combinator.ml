@@ -1,12 +1,12 @@
 #use "opal.ml"
 #mod_use "stream.ml"
 
-type json =
+type t =
   | Number of float
   | Bool of bool
   | String of string
-  | Array of json list
-  | Object of (string * json) list
+  | Array of t list
+  | Object of (string * t) list
 
 let exactly_not x = satisfy ((<>) x)
 
@@ -18,13 +18,22 @@ let exactly_s s =
   in
   loop s 0
 
+let whole_number =
+  let decimal_part = exactly '.' >>= fun _ -> many digit => implode in
+  let* whole_part = many1 digit => implode in
+  let* decimal_part = option "" (decimal_part) in
+  return (whole_part ^ "." ^ decimal_part)
+
+let partial_number =
+  let* _ = exactly '.' in
+  let* decimal_part = many1 digit => implode in
+  return ("0." ^ decimal_part)
+
 let number =
-  let dot_or_digit = exactly '.' <|> digit in
-  let* first = exactly '-' <|> dot_or_digit in
-  let* res = many dot_or_digit in
-  match first :: res |> implode |> float_of_string_opt with
-  | None -> mzero
-  | Some x -> return (Number x)
+  let* negative_part = option "" (exactly '-' >> return "-") in
+  let* number = whole_number <|> partial_number in
+  let value = negative_part ^ number |> float_of_string in
+  return (Number value)
 
 let boolean =
   let true' = exactly_s "true" >> return (Bool true) in
@@ -37,7 +46,7 @@ let string_body =
   | '"' -> mzero (* terminate string *)
   | c when c <> '\\' -> return [c]
   | c ->
-    let* c2 =  any in
+    let* c2 = any in
     return [c; c2]
 
 let string =
@@ -47,6 +56,6 @@ let string =
   let value = body |> List.flatten |> implode in
   return (String value)
 
-let json_parser = choice [number; boolean; string]
+let json = choice [lexeme number; lexeme boolean; lexeme string]
 
 let parse_string p s = parse p (LazyStream.of_string s)
