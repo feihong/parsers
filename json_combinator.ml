@@ -8,8 +8,6 @@ type t =
   | Array of t list
   | Object of (string * t) list
 
-let exactly_not x = satisfy ((<>) x)
-
 let exactly_s s =
   let rec loop s i =
     if i >= String.length s
@@ -49,13 +47,22 @@ let string_body =
     let* c2 = any in
     return [c; c2]
 
-let string =
+let pure_string =
   let* _ = exactly '"' in
   let* body = many string_body in
   let* _ = exactly '"' in
-  let value = body |> List.flatten |> implode in
-  return (String value)
+  return (body |> List.flatten |> implode)
 
-let json = choice [lexeme number; lexeme boolean; lexeme string]
+let string = pure_string => (fun s -> String s)
+
+let rec json input = lexeme (choice [number; boolean; string; array]) input
+
+and array input =
+  let aux =
+    let* _ = exactly '[' in
+    let* elements = sep_by json (exactly ',') in
+    let* _ = lexeme (exactly ']') in
+    return (Array elements)
+  in aux input
 
 let parse_string p s = parse p (LazyStream.of_string s)
