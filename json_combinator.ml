@@ -35,10 +35,9 @@ let boolean =
   true' <|> false'
 
 let string_body =
-  any >>= function
-  | '"' -> mzero (* terminate string *)
-  | '\\' -> any >>= fun c2 -> return ['\\'; c2]
-  | c -> return [c]
+  let escape_sequence = exactly '\\' >> any >>= fun c2 -> return ['\\'; c2] in
+  let not_quote = satisfy ((<>) '"') => fun c -> [c] in
+  escape_sequence <|> not_quote
 
 let pure_string =
   let* _ = exactly '"' in
