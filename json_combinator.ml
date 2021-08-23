@@ -55,14 +55,30 @@ let pure_string =
 
 let string = pure_string => (fun s -> String s)
 
-let rec json input = lexeme (choice [number; boolean; string; array]) input
+let comma = lexeme (exactly ',')
+
+let rec json input = lexeme (choice [number; boolean; string; array; object_]) input
 
 and array input =
   let aux =
     let* _ = exactly '[' in
-    let* elements = sep_by json (exactly ',') in
+    let* elements = sep_by json comma in
     let* _ = lexeme (exactly ']') in
     return (Array elements)
+  in aux input
+
+and object_ input =
+  let key_value =
+    let* key = pure_string in
+    let* _ = lexeme (exactly ':') in
+    let* value = json in
+    return (key, value)
+  in
+  let aux =
+    let* _ = exactly '{' in
+    let* pairs = sep_by (lexeme key_value) comma in
+    let* _ = lexeme (exactly '}') in
+    return (Object pairs)
   in aux input
 
 let parse_string p s = parse p (LazyStream.of_string s)
