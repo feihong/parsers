@@ -35,13 +35,10 @@ let boolean =
   true' <|> false'
 
 let string_body =
-  let* c = any in
-  match c with
+  any >>= function
   | '"' -> mzero (* terminate string *)
-  | c when c <> '\\' -> return [c]
-  | c ->
-    let* c2 = any in
-    return [c; c2]
+  | '\\' -> any >>= fun c2 -> return ['\\'; c2]
+  | c -> return [c]
 
 let pure_string =
   let* _ = exactly '"' in
