@@ -1,8 +1,8 @@
 default: build
-	utop
+	dune utop .
 
 build:
-	ocamlbuild -use-ocamlfind main.byte
+	dune build
 
 clean:
-	ocamlbuild -clean
+	dune clean
