@@ -4,6 +4,7 @@ module Lexer = struct
   type t =
     | True
     | False
+    | Null
     | Number of float
     | String of string
     | Colon
@@ -63,6 +64,11 @@ module Lexer = struct
       | ']' -> loop (RBracket :: acc)
       | ':' -> loop (Colon :: acc)
       | ',' -> loop (Comma :: acc)
+      | 'n' ->
+        (match Stream.nnext 3 stream with
+        | None -> Error "Unexpected end of input"
+        | Some ['u'; 'l'; 'l'] -> loop (Null :: acc)
+        | Some chars -> errorf "Unexpected characters %s" (implode chars))
       | 't' ->
         (match Stream.nnext 3 stream with
         | None -> Error "Unexpected end of input"
@@ -88,6 +94,7 @@ end
 type json =
   | Number of float
   | Bool of bool
+  | Null
   | String of string
   | Array of json list
   | Object of (string * json) list
@@ -97,6 +104,7 @@ module Parser = struct
     match tokens with
     | True :: rest -> Ok (Bool true, rest)
     | False :: rest -> Ok (Bool false, rest)
+    | Null :: rest -> Ok (Null, rest)
     | Number n :: rest -> Ok (Number n, rest)
     | String s :: rest -> Ok (String s, rest)
     | LBracket :: rest -> parse_array rest
