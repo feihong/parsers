@@ -4,6 +4,7 @@
 type t =
   | Number of float
   | Bool of bool
+  | Null
   | String of string
   | Array of t list
   | Object of (string * t) list
@@ -34,6 +35,8 @@ let boolean =
   let false' = exactly_s "false" >> return (Bool false) in
   true' <|> false'
 
+let null = exactly_s "null" >> return Null
+
 let string_body =
   let escape_sequence = exactly '\\' >> any >>= fun c2 -> return ['\\'; c2] in
   let not_quote = satisfy ((<>) '"') => fun c -> [c] in
@@ -49,9 +52,9 @@ let string = pure_string => fun s -> String s
 
 let comma = lexeme (exactly ',')
 
-let rec whole input = (json >>= fun x -> lexeme (eof x)) input
+let rec prog input = (json >>= fun x -> lexeme (eof x)) input
 
-and json input = lexeme (choice [number; boolean; string; array; object_]) input
+and json input = lexeme (choice [number; boolean; null; string; array; object_]) input
 
 and array input =
   let aux =
@@ -75,4 +78,4 @@ and object_ input =
     return (Object pairs)
   in aux input
 
-let parse_string p s = parse p (LazyStream.of_string s)
+let parse_string s = parse prog (LazyStream.of_string s)
