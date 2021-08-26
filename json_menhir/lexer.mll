@@ -15,6 +15,7 @@ rule read =
   | space { read lexbuf }
   | "true" { TRUE }
   | "false" { FALSE }
+  | "null" { NULL }
   | "," { COMMA }
   | ":" { COLON }
   | "[" { LBRACKET }
