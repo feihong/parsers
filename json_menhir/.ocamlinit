@@ -1,3 +1,12 @@
 (* used by utop *)
 open Main;;
 open Main.Ast;;
+
+let result = parse {|
+ [
+    1.2,
+    true,
+    "There's a fly in my \"soup\"",
+    {"a": 1,  "b" : 2}
+  ]
+|};;
