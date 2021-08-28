@@ -8,7 +8,7 @@ let inputs = [
 "null";
 "1234";
 "-56.7";
-{| "cool it's a\n \"string\"" |};
+{| "cool\nit's a \"string\"" |};
 {| ["foo", true, 56.8] |};
 {| {"foo": 1, "bar": null, "baz": [1, 2, 3]} |};
 {|
@@ -16,9 +16,16 @@ let inputs = [
     1.2,
     true,
     "There's a fly in my \"soup\"",
-    {"a": 1,  "b" : 2}
+    { "a" : 1 ,  "b" : 2 }
   ]
 |};
+"falsy";
+{|"Start of string but...|};
+"null true";
 ];;
 
-inputs |> List.iter (fun input -> input |> parse |> show |> print_endline)
+inputs |> List.iter (fun input ->
+  match parse input with
+  | Ok s -> Printf.printf "SUCCESS: %s\n" (show s)
+  | Error s -> Printf.printf "FAILURE for '%s': %s\n" input s
+)
