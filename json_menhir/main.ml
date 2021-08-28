@@ -9,4 +9,7 @@ let parse (s : string) : (Ast.json, string) result =
   | exception Lexer.SyntaxError mesg ->
     let line, col = get_position lexbuf in
     Error (Printf.sprintf "Syntax error at %d, %d: %s" line col mesg)
+  | exception Parser.Error ->
+    let line, col = get_position lexbuf in
+    Error (Printf.sprintf "Parser error at %d, %d" line col)
   | ast -> Ok ast
