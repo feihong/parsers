@@ -1,7 +1,8 @@
 (library
- (name main))
-
-(ocamllex lexer)
+ (name main)
+ (libraries menhirLib sedlex ppxlib)
+ (preprocess
+  (pps sedlex.ppx)))
 
 (menhir
  (modules parser))
