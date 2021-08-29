@@ -1,2 +1,0 @@
-# used by ocamlbuild
-true: package(oUnit), use_menhir

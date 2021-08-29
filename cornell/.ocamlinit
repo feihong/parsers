@@ -1,7 +1,5 @@
 (* used by utop *)
-#directory "_build";;
-#load "lexer.cmo";;
-#load "parser.cmo";;
-#load "main.cmo";;
-open Ast;;
 open Main;;
+open Main.Ast;;
+
+let result = parse "let x = 5 in x + y"
