@@ -1,5 +1,4 @@
-(* Recursive descent parser for Eva language from
-   http://dmitrysoshnikov.com/courses/essentials-of-interpretation/ *)
+(* Very basic S-expression parser *)
 #mod_use "stream.ml"
 
 type t =
@@ -79,7 +78,7 @@ let rec parse_expr stream fn =
   | '-' | '.' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c ->
     fn (parse_number c stream)
   | '"' -> fn (parse_string stream)
-  | c when is_symbol c -> parse_symbol c stream
+  | c when is_symbol c -> fn (parse_symbol c stream)
   | '(' -> parse_list stream [] fn
   | c -> fn (errorf "Unexpected character %c" c)
 
@@ -115,8 +114,10 @@ let cases = [
   {|"It's not a \"bear\"\nit's a doggie"|}, [String "It's not a \"bear\"\nit's a doggie"];
   "foo-bar-baz", [Symbol "foo-bar-baz"];
   "*", [Symbol "*"];
-  (* {|(a 1 "batarang")|}, [EList [Symbol "a"; Number 1.; String "batarang"]];
-  {|foo (bar) (baz 22)|}, [Symbol "foo"; EList [Symbol "bar"]; EList [Symbol "baz"; Number 22.]]; *)
+  {|()|}, [EList []];
+  {|(a 1 "batarang")|}, [EList [Symbol "a"; Number 1.; String "batarang"]];
+  {|(a (1 ("batarang")) b)|}, [EList [Symbol "a"; EList [Number 1.; EList [String "batarang"]]; Symbol "b"]];
+  {|foo (bar) (baz 22)|}, [Symbol "foo"; EList [Symbol "bar"]; EList [Symbol "baz"; Number 22.]];
 ]
 
 let () = cases |> List.iter (fun (s, value) -> assert (parse s = Ok value))
