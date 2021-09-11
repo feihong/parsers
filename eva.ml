@@ -1,4 +1,5 @@
-(* Lexer for Eva language from http://dmitrysoshnikov.com/courses/essentials-of-interpretation/ *)
+(* Recursive descent parser for Eva language from
+   http://dmitrysoshnikov.com/courses/essentials-of-interpretation/ *)
 #mod_use "stream.ml"
 
 type t =
@@ -65,10 +66,10 @@ let parse_string stream =
     | c -> loop (c :: acc)
   in loop []
 
-let rec parse_one stream =
+let rec parse_expr stream =
   match Stream.next stream with
-  | exception Stream.Failure -> errorf "No input"
-  | c when is_space c -> parse_one stream
+  | exception Stream.Failure -> errorf "EOF"
+  | c when is_space c -> parse_expr stream
   | '-' | '.' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c ->
     parse_number c stream
   | c when is_symbol c -> parse_symbol c stream
@@ -84,7 +85,7 @@ and parse_list stream =
       Stream.junk stream;
       Ok (EList (List.rev acc))
     | Some _ ->
-      (match parse_one stream with
+      (match parse_expr stream with
       | Error _ as err -> err
       | Ok x -> loop (x :: acc))
   in loop []
@@ -92,8 +93,8 @@ and parse_list stream =
 let parse s =
   let stream = Stream.of_string s in
   let rec loop acc =
-    match parse_one stream with
-    | Error "No input" -> Ok (List.rev acc)
+    match parse_expr stream with
+    | Error "EOF" -> Ok (List.rev acc)
     | Error _ as err -> err
     | Ok thing -> loop (thing :: acc)
   in loop []
@@ -109,6 +110,7 @@ let cases = [
   "foo-bar-baz", [Symbol "foo-bar-baz"];
   "*", [Symbol "*"];
   {|(a 1 "batarang")|}, [EList [Symbol "a"; Number 1.; String "batarang"]];
+  {|foo (bar) (baz 22)|}, [Symbol "foo"; EList [Symbol "bar"]; EList [Symbol "baz"; Number 22.]];
 ]
 
 let () = cases |> List.iter (fun (s, value) -> assert (parse s = Ok value))
