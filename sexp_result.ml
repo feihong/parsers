@@ -1,4 +1,4 @@
-(* Very basic S-expression parser *)
+(* Very basic S-expression parser implemented using Result *)
 #mod_use "stream.ml"
 
 type t =
@@ -7,11 +7,7 @@ type t =
   | Number of float
   | List of t list
 
-exception ParseError of string
-
-exception EOF
-
-let errorf fmt = Printf.ksprintf (fun s -> raise (ParseError s)) fmt
+let errorf fmt = Printf.ksprintf (fun s -> Error s) fmt
 
 let is_space c = List.mem c ['\n'; '\t'; ' '; '\r']
 
@@ -45,23 +41,24 @@ let parse_number first_char stream =
       let s = reverse_implode acc in
       (match float_of_string_opt s with
       | None -> errorf "Invalid number: %s" s
-      | Some n -> Number n)
+      | Some n -> Ok (Number n))
   in loop ~has_dot:(first_char = '.') [first_char]
 
 let parse_symbol first_char stream =
+  let make_symbol chars = Ok (Symbol (reverse_implode chars)) in
   let rec loop acc =
     match Stream.peek stream with
     | Some c when is_symbol_body c ->
       Stream.junk stream;
       loop (c :: acc)
-    | None | Some _ -> Symbol (reverse_implode acc)
+    | None | Some _ -> make_symbol acc
   in loop [first_char]
 
 let parse_string stream =
   let rec loop acc =
     match Stream.next stream with
     | exception Stream.Failure -> errorf "Unterminated string"
-    | '"' -> String (reverse_implode acc)
+    | '"' -> Ok (String (reverse_implode acc))
     | '\\' ->
       (match Stream.next stream with
       | exception Stream.Failure -> errorf "Unterminated string"
@@ -76,32 +73,35 @@ let parse_string stream =
 
 let rec parse_expr stream fn =
   match Stream.next stream with
-  | exception Stream.Failure -> raise EOF
+  | exception Stream.Failure -> fn (errorf "EOF")
   | c when is_space c -> parse_expr stream fn
   | '-' | '.' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c ->
     fn (parse_number c stream)
   | '"' -> fn (parse_string stream)
   | c when is_symbol c -> fn (parse_symbol c stream)
   | '(' -> parse_list stream [] fn
-  | c -> errorf "Unexpected character %c" c
+  | c -> fn (errorf "Unexpected character %c" c)
 
 and parse_list stream acc fn =
   match Stream.peek stream with
-  | None -> errorf "Unterminated list"
+  | None -> fn (errorf "Unterminated list")
   | Some c when is_space c ->
     Stream.junk stream;
     parse_list stream acc fn
   | Some ')' ->
     Stream.junk stream;
-    fn (List (List.rev acc))
-  | Some _ -> parse_expr stream (fun x -> parse_list stream (x :: acc) fn)
+    fn (Ok (List (List.rev acc)))
+  | Some _ -> parse_expr stream (function
+    | Error _ as err -> fn err
+    | Ok x -> parse_list stream (x :: acc) fn)
 
 let parse s =
   let stream = Stream.of_string s in
   let rec loop acc =
     match parse_expr stream (fun x -> x) with
-    | exception EOF -> List.rev acc
-    | x -> loop (x :: acc)
+    | Error "EOF" -> Ok (List.rev acc)
+    | Error _ as err -> err
+    | Ok thing -> loop (thing :: acc)
   in loop []
 
 let cases = [
@@ -115,10 +115,9 @@ let cases = [
   "foo-bar-baz", [Symbol "foo-bar-baz"];
   "*", [Symbol "*"];
   {|()|}, [List []];
-  {|(())|}, [List [List []]];
   {|(a 1 "batarang")|}, [List [Symbol "a"; Number 1.; String "batarang"]];
   {|(a (1 ("batarang")) b)|}, [List [Symbol "a"; List [Number 1.; List [String "batarang"]]; Symbol "b"]];
   {|foo (bar) (baz 22)|}, [Symbol "foo"; List [Symbol "bar"]; List [Symbol "baz"; Number 22.]];
 ]
 
-let () = cases |> List.iter (fun (s, value) -> assert (parse s = value))
+let () = cases |> List.iter (fun (s, value) -> assert (parse s = Ok value))
