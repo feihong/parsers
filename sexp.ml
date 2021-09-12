@@ -32,21 +32,17 @@ let is_symbol_body c =
   | _ -> false
 
 let parse_number first_char stream =
-  let rec loop ~has_dot acc =
+  let rec loop acc =
     match Stream.peek stream with
-    | Some '.' when has_dot -> errorf "Found second dot in number: %s" (reverse_implode ('.' :: acc))
-    | Some '.' ->
+    | Some ('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' as c) ->
       Stream.junk stream;
-      loop ~has_dot:true ('.' :: acc)
-    | Some ('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c) ->
-      Stream.junk stream;
-      loop ~has_dot (c :: acc)
+      loop (c :: acc)
     | Some _ | None ->
       let s = reverse_implode acc in
       (match float_of_string_opt s with
       | None -> errorf "Invalid number: %s" s
       | Some n -> Number n)
-  in loop ~has_dot:(first_char = '.') [first_char]
+  in loop [first_char]
 
 let parse_symbol first_char stream =
   let rec loop acc =
@@ -60,11 +56,11 @@ let parse_symbol first_char stream =
 let parse_string stream =
   let rec loop acc =
     match Stream.next stream with
-    | exception Stream.Failure -> errorf "Unterminated string"
+    | exception Stream.Failure -> errorf "Unterminated string: %s" (reverse_implode acc)
     | '"' -> String (reverse_implode acc)
     | '\\' ->
       (match Stream.next stream with
-      | exception Stream.Failure -> errorf "Unterminated string"
+      | exception Stream.Failure -> errorf "Unterminated string: %s" (reverse_implode acc)
       | 'n' -> loop ('\n' :: acc)
       | 't' -> loop ('\t' :: acc)
       | 'r' -> loop ('\r' :: acc)
@@ -83,7 +79,7 @@ let rec parse_expr stream fn =
   | '"' -> fn (parse_string stream)
   | c when is_symbol c -> fn (parse_symbol c stream)
   | '(' -> parse_list stream [] fn
-  | c -> errorf "Unexpected character %c" c
+  | c -> errorf "Unexpected character: %c" c
 
 and parse_list stream acc fn =
   match Stream.peek stream with
@@ -118,7 +114,22 @@ let cases = [
   {|(())|}, [List [List []]];
   {|(a 1 "batarang")|}, [List [Symbol "a"; Number 1.; String "batarang"]];
   {|(a (1 ("batarang")) b)|}, [List [Symbol "a"; List [Number 1.; List [String "batarang"]]; Symbol "b"]];
-  {|foo (bar) (baz 22)|}, [Symbol "foo"; List [Symbol "bar"]; List [Symbol "baz"; Number 22.]];
+  {|foo (bar1) (baz 22)|}, [Symbol "foo"; List [Symbol "bar1"]; List [Symbol "baz"; Number 22.]];
 ]
 
 let () = cases |> List.iter (fun (s, value) -> assert (parse s = value))
+
+let error_cases = [
+  "100.00.000", ParseError "Invalid number: 100.00.000";
+  "-", ParseError "Invalid number: -";
+  {|"Hey there sailor|}, ParseError "Unterminated string: Hey there sailor";
+  "\"Hey there sailor\\", ParseError "Unterminated string: Hey there sailor";
+  {|"Hey there\m sailor|}, ParseError "Unrecognized escape sequence: \\m";
+  "abc def1 true~", ParseError "Unexpected character: ~";
+  "(a b c", ParseError "Unterminated list";
+]
+
+let () = error_cases |> List.iter (fun (s, exc) ->
+  match parse s with
+  | exception e -> assert (e = exc)
+  | _ -> assert false)
